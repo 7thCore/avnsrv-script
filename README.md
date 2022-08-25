@@ -1,5 +1,7 @@
 # AnvSrv Script
 
+*Warning: this script is untested!*
+
 Avorion dedicated server script for the Linux operating system. Coded to take full advantage of the Linux systemd service management. Pre-built packages are available for Arch and Debian based distributions for easy installation. More details available on the project's wiki page.
 
 ---
