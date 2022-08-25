@@ -1,0 +1,12 @@
+getent group avnsrv >/dev/null || groupadd --system avnsrv
+getent passwd avnsrv >/dev/null || useradd --system -g avnsrv -d /srv/avnsrv/ -s /bin/bash avnsrv
+
+install -dm700 srv/avnsrv/backups
+install -dm700 srv/avnsrv/config
+install -dm700 srv/avnsrv/logs
+install -dm700 srv/avnsrv/server
+install -dm700 srv/avnsrv/tmpfs
+install -dm700 srv/avnsrv/updates
+chown -R avnsrv:avnsrv srv/avnsrv
+loginctl enable-linger avnsrv
+systemctl start user@$(id -u avnsrv).service
