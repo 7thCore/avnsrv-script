@@ -21,7 +21,7 @@
 
 #Static script variables
 export NAME="AvnSrv" #Name of the tmux session.
-export VERSION="1.1-1" #Package and script version.
+export VERSION="1.2-1" #Package and script version.
 export SERVICE_NAME="avnsrv" #Name of the service files, user, script and script log.
 export LOG_DIR="/srv/$SERVICE_NAME/logs" #Location of the script's log files.
 export LOG_STRUCTURE="$LOG_DIR/$(date +"%Y")/$(date +"%m")/$(date +"%d")" #Folder structure of the script's log files.
@@ -214,26 +214,29 @@ script_status() {
 script_add_server() {
 	script_logs
 
-	#Loop until the server is active and output the state of it
+	#Downloads game files
 	script_add_server_current_download() {
 		if [ ! -d "$UPDATE_DIR/$1" ]; then
 			mkdir -p "$UPDATE_DIR/$1"
 		fi
 		steamcmd +login anonymous +app_info_update 1 +app_info_print $APPID +quit > $UPDATE_DIR/steam_app_data.txt
+
 		INSTALLED_BUILDID=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
 		echo "$INSTALLED_BUILDID" > $UPDATE_DIR/$1/installed.buildid
 
 		INSTALLED_TIME=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"timeupdated\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
+
 		echo "$INSTALLED_TIME" > $UPDATE_DIR/$1/installed.timeupdated
 		steamcmd +login anonymous +force_install_dir $SRV_DIR/$1/ +login anonymous +app_update $APPID validate +quit
 	}
 
-	#Loop until the server is active and output the state of it
+	#Downloads game files
 	script_add_server_beta_download() {
 		if [ ! -d "$UPDATE_DIR/$1" ]; then
 			mkdir -p "$UPDATE_DIR/$1"
 		fi
 		steamcmd +login anonymous +app_info_update 1 +app_info_print $APPID +quit > $UPDATE_DIR/steam_app_data.txt
+
 		INSTALLED_BUILDID=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"$2\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
 		echo "$INSTALLED_BUILDID" > $UPDATE_DIR/$1/installed.buildid
 
@@ -968,6 +971,74 @@ script_update() {
 
 #--------------------------
 
+#Uses steam to verfy the integrity of the game server files
+script_verify_game_integrity() {
+	script_logs
+
+	#Verifies game files
+	script_verify_game_download() {
+		if [ ! -f "$UPDATE_DIR/$1/beta.txt" ]; then
+			steamcmd +login anonymous +force_install_dir $SRV_DIR/$1/ +login anonymous $APPID validate +quit
+		elif [ -f "$UPDATE_DIR/$1/beta.txt" ]; then
+			STEAMCMD_BETA_BRANCH_NAME=$(cat $UPDATE_DIR/$1/beta.txt 2> /dev/null | grep steamcmd_beta_branch= | cut -d = -f2)
+			steamcmd +login anonymous +force_install_dir $SRV_DIR/$1/ +login anonymous $APPID -beta $STEAMCMD_BETA_BRANCH_NAME validate +quit
+		fi
+	}
+
+	if [ -z "$1" ]; then
+		IFS=","
+		for SERVER_SERVICE in $(systemctl --user list-units -all --no-legend --no-pager --plain $SERVICE_NAME@*.service $SERVICE_NAME-tmpfs@*.service | awk '{print $1}' | tr "\\n" "," | sed 's/,$//'); do
+			SERVER_INSTANCE=$(echo $SERVER_SERVICE | awk -F '@' '{print $2}' | awk -F '.service' '{print $1}')
+			if [[ "$(systemctl --user show -p ActiveState --value $SERVER_SERVICE)" == "active" ]] && [[ "$(systemctl --user show -p UnitFileState --value $SERVER_SERVICE)" == "enabled" ]]; then
+				WAS_ACTIVE="1"
+				script_stop $SERVER_INSTANCE
+			fi
+			if [[ "$(echo $SERVER_SERVICE | awk -F '@' '{print $1}')" == "$SERVICE_NAME-tmpfs" ]]; then
+				echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] (Update) Deleting TmpFs content." | tee -a "$LOG_SCRIPT"
+				rm -rf $TMPFS_DIR/$SERVER_INSTANCE/
+			fi
+			script_verify_game_download $SERVER_INSTANCE
+			if [ "$WAS_ACTIVE" == "1" ]; then
+				if [[ "$(echo $SERVER_SERVICE | awk -F '@' '{print $1}')" == "$SERVICE_NAME-tmpfs" ]]; then
+					mkdir -p "$TMPFS_DIR/$SERVER_INSTANCE"
+				fi
+				sleep 1
+				if [[ "$UPDATE_IGNORE_FAILED_ACTIVATIONS" == "1" ]]; then
+					script_start $SERVER_INSTANCE "ignore"
+				else
+					script_start $SERVER_INSTANCE
+				fi
+			fi
+		done
+	else
+		for SERVER_SERVICE in $(systemctl --user list-units -all --no-legend --no-pager --plain $SERVICE_NAME@$1.service $SERVICE_NAME-tmpfs@$1.service | awk '{print $1}' | tr "\\n" "," | sed 's/,$//'); do
+			SERVER_INSTANCE=$(echo $SERVER_SERVICE | awk -F '@' '{print $2}' | awk -F '.service' '{print $1}')
+			if [[ "$(systemctl --user show -p ActiveState --value $SERVER_SERVICE)" == "active" ]] && [[ "$(systemctl --user show -p UnitFileState --value $SERVER_SERVICE)" == "enabled" ]]; then
+				WAS_ACTIVE="1"
+				script_stop $SERVER_INSTANCE
+			fi
+			if [[ "$(echo $SERVER_SERVICE | awk -F '@' '{print $1}')" == "$SERVICE_NAME-tmpfs" ]]; then
+				echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] (Update) Deleting TmpFs content." | tee -a "$LOG_SCRIPT"
+				rm -rf $TMPFS_DIR/$SERVER_INSTANCE/
+			fi
+			script_verify_game_download $SERVER_INSTANCE
+			if [ "$WAS_ACTIVE" == "1" ]; then
+				if [[ "$(echo $SERVER_SERVICE | awk -F '@' '{print $1}')" == "$SERVICE_NAME-tmpfs" ]]; then
+					mkdir -p "$TMPFS_DIR/$SERVER_INSTANCE"
+				fi
+				sleep 1
+				if [[ "$UPDATE_IGNORE_FAILED_ACTIVATIONS" == "1" ]]; then
+					script_start $SERVER_INSTANCE "ignore"
+				else
+					script_start $SERVER_INSTANCE
+				fi
+			fi
+		done
+	fi
+}
+
+#--------------------------
+
 #Issue the save command to the server
 script_save() {
 	script_logs
@@ -1656,8 +1727,9 @@ case "$1" in
 		echo "Backup managment:"
 		echo -e "${GREEN}backup                       ${RED}- ${GREEN}Backup files if server running.${NC}"
 		echo ""
-		echo "Game specific functions:"
+		echo "Steam managment:"
 		echo -e "${GREEN}update                       ${RED}- ${GREEN}Update the server, if the server is running it will save it, shut it down, update it and restart it.${NC}"
+		echo -e "${GREEN}verify <server number>       ${RED}- ${GREEN}Verifiy game server files, if the server is running it will save it, shut it down, verify it and restart it.${NC}"
 		echo ""
 		;;
 #--------------------------
@@ -1725,9 +1797,12 @@ case "$1" in
 		script_backup
 		;;
 #--------------------------
-#Game specific functions
+#Steam managment
 	update)
 		script_update
+		;;
+	verify)
+		script_verify_game_integrity
 		;;
 #--------------------------
 #Hidden functions meant for systemd service use
@@ -1768,7 +1843,7 @@ case "$1" in
 	echo -e "${GREEN}Server services managment${RED}: ${GREEN}add_server, remove_server, enable_services, disable_services, reload_services${NC}"
 	echo -e "${GREEN}Server and console managment${RED}: ${GREEN}start, start_no_err, stop,restart, save, sync, attach${NC}"
 	echo -e "${GREEN}Backup managment${RED}: ${GREEN}backup${NC}"
-	echo -e "${GREEN}Game specific functions${RED}: ${GREEN}update, delete_save${NC}"
+	echo -e "${GREEN}Steam managment${RED}: ${GREEN}update, verify${NC}"
 	exit 1
 	;;
 esac
