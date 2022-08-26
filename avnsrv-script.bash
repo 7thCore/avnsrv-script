@@ -21,7 +21,7 @@
 
 #Static script variables
 export NAME="AvnSrv" #Name of the tmux session.
-export VERSION="1.2-1" #Package and script version.
+export VERSION="1.2-2" #Package and script version.
 export SERVICE_NAME="avnsrv" #Name of the service files, user, script and script log.
 export LOG_DIR="/srv/$SERVICE_NAME/logs" #Location of the script's log files.
 export LOG_STRUCTURE="$LOG_DIR/$(date +"%Y")/$(date +"%m")/$(date +"%d")" #Folder structure of the script's log files.
@@ -33,7 +33,7 @@ UPDATE_DIR="/srv/$SERVICE_NAME/updates" #Location of update information for the 
 BCKP_DIR="/srv/$SERVICE_NAME/backups" #Location of stored backups.
 BCKP_STRUCTURE="$(date +"%Y")/$(date +"%m")/$(date +"%d")" #How backups are sorted, by default it's sorted in folders by month and day.
 
-APPID="445220" #Steam app id for the server
+APPID="565060" #Steam app id for the server
 
 #Script config file variables
 BCKP_DELOLD=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf 2> /dev/null | grep script_bckp_delold= | cut -d = -f2) #Defines how many days old backups are deleted.
@@ -227,7 +227,7 @@ script_add_server() {
 		INSTALLED_TIME=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"timeupdated\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
 
 		echo "$INSTALLED_TIME" > $UPDATE_DIR/$1/installed.timeupdated
-		steamcmd +login anonymous +force_install_dir $SRV_DIR/$1/ +login anonymous +app_update $APPID validate +quit
+		steamcmd +force_install_dir $SRV_DIR/$1/ +login anonymous +app_update $APPID validate +quit
 	}
 
 	#Downloads game files
@@ -244,7 +244,7 @@ script_add_server() {
 		echo "$INSTALLED_TIME" > $UPDATE_DIR/$1/installed.timeupdated
 
 		echo "steamcmd_beta_branch=$2" > $UPDATE_DIR/$1/beta.txt
-		steamcmd +login anonymous +force_install_dir $SRV_DIR/$1/ +login anonymous +app_update $APPID -beta $2 validate +quit
+		steamcmd +force_install_dir $SRV_DIR/$1/ +login anonymous +app_update $APPID -beta $2 validate +quit
 	}
 
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] (Add server instance) User adding new server instance." | tee -a "$LOG_SCRIPT"
@@ -933,10 +933,10 @@ script_update() {
 			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] (Update) Updating server $SERVER_INSTANCE..." | tee -a "$LOG_SCRIPT"
 
 			if [ ! -f "$UPDATE_DIR/$SERVER_INSTANCE/beta.txt" ]; then
-				steamcmd +login anonymous +force_install_dir $SRV_DIR/$SERVER_INSTANCE/ +login anonymous +app_update $APPID validate +quit
+				steamcmd +force_install_dir $SRV_DIR/$SERVER_INSTANCE/ +login anonymous +app_update $APPID validate +quit
 			elif [ -f "$UPDATE_DIR/$SERVER_INSTANCE/beta.txt" ]; then
 				STEAMCMD_BETA_BRANCH_NAME=$(cat $UPDATE_DIR/$SERVER_INSTANCE/beta.txt 2> /dev/null | grep steamcmd_beta_branch= | cut -d = -f2)
-				steamcmd +login anonymous +force_install_dir $SRV_DIR/$SERVER_INSTANCE/ +login anonymous +app_update $APPID -beta $STEAMCMD_BETA_BRANCH_NAME validate +quit
+				steamcmd +force_install_dir $SRV_DIR/$SERVER_INSTANCE/ +login anonymous +app_update $APPID -beta $STEAMCMD_BETA_BRANCH_NAME validate +quit
 			fi
 
 			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] (Update) Update completed." | tee -a "$LOG_SCRIPT"
@@ -978,10 +978,10 @@ script_verify_game_integrity() {
 	#Verifies game files
 	script_verify_game_download() {
 		if [ ! -f "$UPDATE_DIR/$1/beta.txt" ]; then
-			steamcmd +login anonymous +force_install_dir $SRV_DIR/$1/ +login anonymous $APPID validate +quit
+			steamcmd +force_install_dir $SRV_DIR/$1/ +login anonymous $APPID validate +quit
 		elif [ -f "$UPDATE_DIR/$1/beta.txt" ]; then
 			STEAMCMD_BETA_BRANCH_NAME=$(cat $UPDATE_DIR/$1/beta.txt 2> /dev/null | grep steamcmd_beta_branch= | cut -d = -f2)
-			steamcmd +login anonymous +force_install_dir $SRV_DIR/$1/ +login anonymous $APPID -beta $STEAMCMD_BETA_BRANCH_NAME validate +quit
+			steamcmd +force_install_dir $SRV_DIR/$1/ +login anonymous $APPID -beta $STEAMCMD_BETA_BRANCH_NAME validate +quit
 		fi
 	}
 
@@ -1623,7 +1623,7 @@ script_config_tmpfs() {
 script_config_script() {
 	echo -e "${CYAN}Script configuration${NC}"
 	echo -e ""
-	echo -e "The script uses jq to download the vanilla server.jar from Mojang servers, however you have the option to manualy copy the files yourself."
+	echo -e "The script uses steamcmd to download the dedicated server, however you have the option to manualy copy the files yourself."
 	echo -e ""
 	echo -e "The script can work either way. The $SERVICE_NAME user's home directory is located in /srv/$SERVICE_NAME and all files are located there."
 	echo -e "This configuration installation will only install the essential configuration. No discord, email or tmpfs/ramdisk"
@@ -1644,15 +1644,6 @@ script_config_script() {
 
 	echo "Adding first server"
 	script_add_server
-
-	read -p "Install ServerSync (Usefull for syncing custom modpacks with players)? (y/n): " SERVERSYNC_SETUP
-	if [[ "$SERVERSYNC_SETUP" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-		echo "Downloading and installing ServerSync from github."
-		mkdir -p "/srv/$SERVICE_NAME/server01_sync"
-		curl -s https://api.github.com/repos/superzanti/ServerSync/releases/latest | jq -r ".assets[] | select(.name | contains(\"jar\")) | .browser_download_url" | wget -i -
-		mv *serversync* /srv/$SERVICE_NAME/server01_sync
-		systemctl --user enable $SERVICE_NAME-serversync@server01.service
-	fi
 
 	echo "Writing config files"
 

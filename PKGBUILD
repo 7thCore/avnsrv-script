@@ -16,7 +16,7 @@
 
 pkgname=avnsrv-script
 pkgver=1.2
-pkgrel=1
+pkgrel=2
 pkgdesc='Avorion server script for running the server on linux.'
 arch=('x86_64')
 license=('GPL3')
@@ -36,7 +36,8 @@ depends=('bash'
          'unzip'
          'p7zip'
          'postfix'
-         's-nail')
+         's-nail'
+         'steamcmd')
 install=avnsrv-script.install
 source=('bash_profile'
         'avnsrv-mkdir-tmpfs@.service'
@@ -50,7 +51,7 @@ source=('bash_profile'
         'avnsrv-tmpfs@.service')
 sha256sums=('f1e2f643b81b27d16fe79e0563e39c597ce42621ae7c2433fd5b70f1eeab5d63'
             'fda540235eefe5766bb361f3baaf98bc838499dd3a090619c759635a1bc96f64'
-            '63bd080fc39906a9c62cd673bbdb175c39feffd2540c6628292b830441a53eda'
+            'ceb5d8fe8a82cfedaefb673316c18d6e64b729304afd626da240bada85e7da4c'
             'b372bba5101c13c04148724dc56f2686906bbeb919883d33c76b2101e8286ee2'
             '941ae96e2e35ea45f9a4dbe43e64073be1161f451273d88dbe6c0666b01944b9'
             '9de872b1fbaa9de17efad7c837b24f7a78099bd8a2a53cc2a01d733ff98ed5eb'
