@@ -21,19 +21,20 @@
 
 #Static script variables
 export NAME="AvnSrv" #Name of the tmux session.
-export VERSION="1.3-1" #Package and script version.
+export VERSION="1.3-3" #Package and script version.
 export SERVICE_NAME="avnsrv" #Name of the service files, user, script and script log.
 export LOG_DIR="/srv/$SERVICE_NAME/logs" #Location of the script's log files.
 export LOG_STRUCTURE="$LOG_DIR/$(date +"%Y")/$(date +"%m")/$(date +"%d")" #Folder structure of the script's log files.
 export LOG_SCRIPT="$LOG_STRUCTURE/$SERVICE_NAME-script.log" #Script log.
 SRV_DIR="/srv/$SERVICE_NAME/server" #Location of the server located on your hdd/ssd.
 TMPFS_DIR="/srv/$SERVICE_NAME/tmpfs" #Locaton of your tmpfs partition.
-CONFIG_DIR="/srv/$SERVICE_NAME/config" #Location of scriot configuration.
+CONFIG_DIR="/srv/$SERVICE_NAME/config" #Location of script configuration.
 ENV_DIR="/srv/$SERVICE_NAME/environments" #Location of server environment configurations.
 UPDATE_DIR="/srv/$SERVICE_NAME/updates" #Location of update information for the script's automatic update feature.
 BCKP_DIR="/srv/$SERVICE_NAME/backups" #Location of stored backups.
 BCKP_STRUCTURE="$(date +"%Y")/$(date +"%m")/$(date +"%d")" #How backups are sorted, by default it's sorted in folders by month and day.
 
+#SteamCmd variables
 APPID="565060" #Steam app id for the server
 
 #Script config file variables
@@ -268,9 +269,11 @@ script_add_server() {
 
 		read -p "Enable tmpfs for this server? (y/n): " SERVER_INSTANCE_ADD_TMPFS
 
+		echo ""
 		read -p "Do you want to download the latest server files from Steam servers? (y/n): " SERVER_INSTANCE_ADD_DOWNLOAD
 		read -p "Enable automatic updates from Steam servers for this instance? (y/n): " SERVER_INSTANCE_ADD_UPDATES
 
+		echo ""
 		read -p "Enter the galaxy name for your server: " SERVER_GALAXY_NAME
 		read -p "Enter the server admin's SteamID64: " SERVER_STEAM_ID
 		read -p "Enter the galaxy data path: " SERVER_DATA_PATH
