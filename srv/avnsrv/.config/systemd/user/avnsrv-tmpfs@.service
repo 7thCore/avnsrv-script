@@ -25,7 +25,7 @@ StartLimitAction=none
 OnFailure=avnsrv-send-notification@.service
 
 [Service]
-EnvironmentFile=/srv/avnsrv/config/environments/%i.env
+EnvironmentFile=/srv/avnsrv/environments/%i.env
 Type=forking
 KillMode=none
 WorkingDirectory=/srv/avnsrv/tmpfs/%i

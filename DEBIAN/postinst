@@ -3,6 +3,7 @@ getent passwd avnsrv >/dev/null || useradd --system -g avnsrv -d /srv/avnsrv/ -s
 
 install -dm700 srv/avnsrv/backups
 install -dm700 srv/avnsrv/config
+install -dm700 srv/avnsrv/environments
 install -dm700 srv/avnsrv/logs
 install -dm700 srv/avnsrv/server
 install -dm700 srv/avnsrv/tmpfs
