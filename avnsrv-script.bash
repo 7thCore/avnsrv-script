@@ -21,14 +21,15 @@
 
 #Static script variables
 export NAME="AvnSrv" #Name of the tmux session.
-export VERSION="1.2-2" #Package and script version.
+export VERSION="1.3-1" #Package and script version.
 export SERVICE_NAME="avnsrv" #Name of the service files, user, script and script log.
 export LOG_DIR="/srv/$SERVICE_NAME/logs" #Location of the script's log files.
 export LOG_STRUCTURE="$LOG_DIR/$(date +"%Y")/$(date +"%m")/$(date +"%d")" #Folder structure of the script's log files.
 export LOG_SCRIPT="$LOG_STRUCTURE/$SERVICE_NAME-script.log" #Script log.
 SRV_DIR="/srv/$SERVICE_NAME/server" #Location of the server located on your hdd/ssd.
 TMPFS_DIR="/srv/$SERVICE_NAME/tmpfs" #Locaton of your tmpfs partition.
-CONFIG_DIR="/srv/$SERVICE_NAME/config" #Location of this script.
+CONFIG_DIR="/srv/$SERVICE_NAME/config" #Location of scriot configuration.
+ENV_DIR="/srv/$SERVICE_NAME/environments" #Location of server environment configurations.
 UPDATE_DIR="/srv/$SERVICE_NAME/updates" #Location of update information for the script's automatic update feature.
 BCKP_DIR="/srv/$SERVICE_NAME/backups" #Location of stored backups.
 BCKP_STRUCTURE="$(date +"%Y")/$(date +"%m")/$(date +"%d")" #How backups are sorted, by default it's sorted in folders by month and day.
@@ -274,9 +275,9 @@ script_add_server() {
 		read -p "Enter the server admin's SteamID64: " SERVER_STEAM_ID
 		read -p "Enter the galaxy data path: " SERVER_DATA_PATH
 
-		echo "GALAXY_NAME=$SERVER_GALAXY_NAME" > $CONFIG_DIR/environments/${SERVER_INSTANCE_ADD}.env
-		echo "STEAMID64=$SERVER_STEAM_ID" >> $CONFIG_DIR/environments/${SERVER_INSTANCE_ADD}.env
-		echo "GALAXY_PATH=$SERVER_DATA_PATH" >> $CONFIG_DIR/environments/${SERVER_INSTANCE_ADD}.env
+		echo "GALAXY_NAME=$SERVER_GALAXY_NAME" > $ENV_DIR/${SERVER_INSTANCE_ADD}.env
+		echo "STEAMID64=$SERVER_STEAM_ID" >> $ENV_DIR/${SERVER_INSTANCE_ADD}.env
+		echo "GALAXY_PATH=$SERVER_DATA_PATH" >> $ENV_DIR/${SERVER_INSTANCE_ADD}.env
 
 		mkdir "$SRV_DIR/$SERVER_INSTANCE_ADD"
 
@@ -381,7 +382,7 @@ script_remove_server() {
 			fi
 			read -p "Delete the environment file for $SERVER_INSTANCE_REMOVE? (y/n): " DELETE_SERVER_ENV_FILE
 			if [[ "$DELETE_SERVER_ENV_FILE" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-				rm $CONFIG_DIR/environments/${SERVER_INSTANCE_REMOVE}.env
+				rm $ENV_DIR/${SERVER_INSTANCE_REMOVE}.env
 			fi
 			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] (Remove server instance) Server instance $SERVER_INSTANCE_REMOVE successfully removed." | tee -a "$LOG_SCRIPT"
 			break
