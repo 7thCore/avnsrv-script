@@ -26,6 +26,7 @@ OnFailure=avnsrv-send-notification@.service
 
 [Service]
 EnvironmentFile=/srv/avnsrv/environments/%i.env
+Environment=export LD_LIBRARY_PATH=/srv/avnsrv/tmpfs/%i/linux64
 Type=forking
 KillMode=none
 WorkingDirectory=/srv/avnsrv/tmpfs/%i
